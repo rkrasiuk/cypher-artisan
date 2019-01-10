@@ -14,6 +14,11 @@ import (
 // [WITH [ORDER BY] [SKIP] [LIMIT]]
 // RETURN [ORDER BY] [SKIP] [LIMIT]
 
+// Stringer ...
+type Stringer string
+
+func (s Stringer) String() string { return string(s) }
+
 // NewQueryBuilder ...
 func NewQueryBuilder() QueryBuilder {
 	return QueryBuilder{}
@@ -29,11 +34,17 @@ type Builder interface {
 }
 
 // Match ...
-func (qb QueryBuilder) Match(matchClause string) QueryBuilder {
-	return QueryBuilder{
-		qb.query + `
+func (qb QueryBuilder) Match(patterns ...string) QueryBuilder {
+	query := qb.query + `
 		MATCH 
-			` + matchClause,
+			`
+
+	for _, pattern := range patterns {
+		query += pattern + `,
+			`
+	}
+	return QueryBuilder{
+		query,
 	}
 }
 
@@ -97,30 +108,41 @@ func main() {
 
 	// var qb QueryBuilder
 
-	res, err := NewQueryBuilder().Match(`
-		` + node.NewNode("w1").Labels("Wallet").Props(node.Prop{"address", "{w1}"}).String() + `, 
-		` + node.NewNode("w2").Labels("Wallet").String() + `,
-			p = (w1)-[tx:|*DEPTH*|]-(w2)
-		`).With(
-		`wp, w1, w2,
+	res, err := NewQueryBuilder().
+		Match(
+			node.NewNode("w1").Labels("Wallet").Props(node.Prop{"address", "{w1}"}).String(),
+			node.NewNode("w2").Labels("Wallet").String(),
+			"p = (w1)-[tx:|*DEPTH*|]-(w2)",
+		).
+		With(
+			`wp, w1, w2,
 			w2.address AS recipient,
 			|*WHERE*| AS tx2`,
-	).Return("p, w1, w2, length(p), tx2").Limit("20").Execute()
+		).
+		Return("p, w1, w2, length(p), tx2").Limit("20").Execute()
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println("res: \n", res, "\n---\n ")
 
-	res, err = NewQueryBuilder().Match("(a:Person)").Where("a.from = \"Sweden\"").Return("a").Execute()
+	res, err = NewQueryBuilder().
+		Match("(a:Person)").
+		Where(`a.from = "Sweden"`).
+		Return("a").Execute()
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Println("res: \n", res, "\n---\n ")
 
-	res, err = NewQueryBuilder().Match(`
-			` + node.NewNode("w1").Labels("Wallet").String() + `,
-			` + node.NewNode("w2").Labels("Wallet").String() + `,
-			p = shortestPath((w1)-[*..]-(w2))`).Where("w1.address = {w1} AND w2.address IN {w2}").Return("p, length(p)").Execute()
+	res, err = NewQueryBuilder().
+		Match(
+			node.NewNode("w1").Labels("Wallet").String(),
+			node.NewNode("w2").Labels("Wallet").String(),
+			"p = shortestPath((w1)-[*..]-(w2))",
+		).
+		Where("w1.address = {w1} AND w2.address IN {w2}").
+		Return("p, length(p)").Execute()
+
 	fmt.Println(res)
 }

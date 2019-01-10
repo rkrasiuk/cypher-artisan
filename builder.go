@@ -1,18 +1,31 @@
 package main //builder
 
 import (
-	"errors"
 	"fmt"
-	"log"
+	"strconv"
 
+	"github.com/neo4j/neo4j-go-driver/neo4j"
 	"github.com/rkrasiuk/cypher-artisan/node"
 )
 
-// Read query structure
+// Read Query Structure
 // [MATCH WHERE]
 // [OPTIONAL MATCH WHERE]
 // [WITH [ORDER BY] [SKIP] [LIMIT]]
 // RETURN [ORDER BY] [SKIP] [LIMIT]
+
+// Write-Only Query Structure
+// (CREATE [UNIQUE] | MERGE)*
+// [SET|DELETE|REMOVE|FOREACH]*
+// [RETURN [ORDER BY] [SKIP] [LIMIT]]
+
+// Read-Write Query Structure
+// [MATCH WHERE]
+// [OPTIONAL MATCH WHERE]
+// [WITH [ORDER BY] [SKIP] [LIMIT]]
+// (CREATE [UNIQUE] | MERGE)*
+// [SET|DELETE|REMOVE|FOREACH]*
+// [RETURN [ORDER BY] [SKIP] [LIMIT]]
 
 // Stringer ...
 type Stringer string
@@ -39,9 +52,13 @@ func (qb QueryBuilder) Match(patterns ...string) QueryBuilder {
 		MATCH 
 			`
 
-	for _, pattern := range patterns {
-		query += pattern + `,
-			`
+	for i, pattern := range patterns {
+		query += pattern
+		if i != len(patterns)-1 {
+			query += `,`
+		}
+		query += `
+		`
 	}
 	return QueryBuilder{
 		query,
@@ -49,6 +66,7 @@ func (qb QueryBuilder) Match(patterns ...string) QueryBuilder {
 }
 
 // Where ...
+// WHERE is always part of a MATCH, OPTIONAL MATCH, WITH or START clause
 func (qb QueryBuilder) Where(whereClause string) QueryBuilder {
 	return QueryBuilder{
 		qb.query + `
@@ -85,32 +103,29 @@ func (qb QueryBuilder) OrderBy(orderByClause string) QueryBuilder {
 }
 
 // Limit ...
-func (qb QueryBuilder) Limit(limitClause string) QueryBuilder {
+func (qb QueryBuilder) Limit(limit int) QueryBuilder {
 	return QueryBuilder{
 		qb.query + `
-		LIMIT ` + limitClause,
+		LIMIT ` + strconv.Itoa(limit),
 	}
 }
 
 // Execute ...
-func (qb QueryBuilder) Execute() (string, error) {
-	success := true
-
-	if success {
-		return qb.query, nil
-	}
-	return "", errors.New("Failed to execute query")
+func (qb QueryBuilder) Execute() string {
+	return qb.query
 }
 
 func main() {
-	n := node.NewNode("w1").Labels("Person", "Wallet").Props(node.Prop{"name", "Theo Gauchoux"}, node.Prop{"age", 22})
+	n := node.NewNode("w1").
+		Labels("Person", "Wallet").
+		Props(node.Prop{"name", "Theo Gauchoux"}, node.Prop{"age", 22})
 	fmt.Println(n)
 
 	// var qb QueryBuilder
 
-	res, err := NewQueryBuilder().
+	res := NewQueryBuilder().
 		Match(
-			node.NewNode("w1").Labels("Wallet").Props(node.Prop{"address", "{w1}"}).String(),
+			node.NewNode("w1").Labels("Wallet").String(),
 			node.NewNode("w2").Labels("Wallet").String(),
 			"p = (w1)-[tx:|*DEPTH*|]-(w2)",
 		).
@@ -119,23 +134,17 @@ func main() {
 			w2.address AS recipient,
 			|*WHERE*| AS tx2`,
 		).
-		Return("p, w1, w2, length(p), tx2").Limit("20").Execute()
+		Return("p, w1, w2, length(p), tx2").Limit(20).Execute()
 
-	if err != nil {
-		log.Fatalln(err)
-	}
 	fmt.Println("res: \n", res, "\n---\n ")
 
-	res, err = NewQueryBuilder().
+	res = NewQueryBuilder().
 		Match("(a:Person)").
 		Where(`a.from = "Sweden"`).
 		Return("a").Execute()
-	if err != nil {
-		log.Fatalln(err)
-	}
 	fmt.Println("res: \n", res, "\n---\n ")
 
-	res, err = NewQueryBuilder().
+	res = NewQueryBuilder().
 		Match(
 			node.NewNode("w1").Labels("Wallet").String(),
 			node.NewNode("w2").Labels("Wallet").String(),
@@ -145,4 +154,53 @@ func main() {
 		Return("p, length(p)").Execute()
 
 	fmt.Println(res)
+
+	var (
+		driver  neo4j.Driver
+		session neo4j.Session
+		err     error
+	)
+
+	if driver, err = neo4j.NewDriver(
+		"bolt://localhost:7687",
+		neo4j.BasicAuth("neo4j", "12345678", ""),
+	); err != nil {
+		panic(err)
+	}
+	defer driver.Close()
+
+	if session, err = driver.Session(neo4j.AccessModeWrite); err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	q := NewQueryBuilder().Match(
+		node.NewNode("people").Labels("Person").String(),
+	).Return("people.name").Limit(10).Execute()
+	fmt.Println("---\n", q)
+	runAndPrint(session, q)
+
+	q = NewQueryBuilder().
+		Match(
+			node.NewNode("nineties").Labels("Movie").String(),
+		).
+		Where("nineties.released >= 1990 AND nineties.released < 2000").
+		Return("nineties.title").
+		Execute()
+	runAndPrint(session, q)
+}
+
+func runAndPrint(session neo4j.Session, q string) {
+	result, err := session.Run(q, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("RESULTS")
+	for result.Next() {
+		fmt.Println(result.Record().GetByIndex(0))
+	}
+	if err := result.Err(); err != nil {
+		panic(err)
+	}
 }

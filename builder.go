@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/neo4j/neo4j-go-driver/neo4j"
-	"github.com/rkrasiuk/cypher-artisan/node"
+	art "github.com/rkrasiuk/cypher-artisan/ascii-art"
 )
 
 // Read Query Structure
@@ -116,17 +116,17 @@ func (qb QueryBuilder) Execute() string {
 }
 
 func main() {
-	n := node.NewNode("w1").
+	n := art.NewNode("w1").
 		Labels("Person", "Wallet").
-		Props(node.Prop{"name", "Theo Gauchoux"}, node.Prop{"age", 22})
+		Props(art.Prop{"name", "Theo Gauchoux"}, art.Prop{"age", 22})
 	fmt.Println(n)
 
 	// var qb QueryBuilder
 
 	res := NewQueryBuilder().
 		Match(
-			node.NewNode("w1").Labels("Wallet").String(),
-			node.NewNode("w2").Labels("Wallet").String(),
+			art.NewNode("w1").Labels("Wallet").String(),
+			art.NewNode("w2").Labels("Wallet").String(),
 			"p = (w1)-[tx:|*DEPTH*|]-(w2)",
 		).
 		With(
@@ -146,14 +146,17 @@ func main() {
 
 	res = NewQueryBuilder().
 		Match(
-			node.NewNode("w1").Labels("Wallet").String(),
-			node.NewNode("w2").Labels("Wallet").String(),
+			art.NewNode("w1").Labels("Wallet").String(),
+			art.NewNode("w2").Labels("Wallet").String(),
 			"p = shortestPath((w1)-[*..]-(w2))",
 		).
 		Where("w1.address = {w1} AND w2.address IN {w2}").
 		Return("p, length(p)").Execute()
 
 	fmt.Println(res)
+
+	edge := art.NewEdge("").Props(art.Prop{"key", "value"}).Path("")
+	fmt.Println("edge:", edge)
 
 	var (
 		driver  neo4j.Driver
@@ -163,7 +166,7 @@ func main() {
 
 	if driver, err = neo4j.NewDriver(
 		"bolt://localhost:7687",
-		neo4j.BasicAuth("neo4j", "12345678", ""),
+		neo4j.BasicAuth("neo4j", "12345678", ""), // super creative ;)
 	); err != nil {
 		panic(err)
 	}
@@ -175,14 +178,14 @@ func main() {
 	defer session.Close()
 
 	q := NewQueryBuilder().Match(
-		node.NewNode("people").Labels("Person").String(),
+		art.NewNode("people").Labels("Person").String(),
 	).Return("people.name").Limit(10).Execute()
 	fmt.Println("---\n", q)
 	runAndPrint(session, q)
 
 	q = NewQueryBuilder().
 		Match(
-			node.NewNode("nineties").Labels("Movie").String(),
+			art.NewNode("nineties").Labels("Movie").String(),
 		).
 		Where("nineties.released >= 1990 AND nineties.released < 2000").
 		Return("nineties.title").

@@ -28,6 +28,7 @@ type Edge struct {
 	labels []string
 	props  Props
 	path   Path
+	// variable length
 }
 
 // NewEdge ...

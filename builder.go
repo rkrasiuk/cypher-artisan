@@ -8,25 +8,6 @@ import (
 	art "github.com/rkrasiuk/cypher-artisan/ascii-art"
 )
 
-// Read Query Structure
-// [MATCH WHERE]
-// [OPTIONAL MATCH WHERE]
-// [WITH [ORDER BY] [SKIP] [LIMIT]]
-// RETURN [ORDER BY] [SKIP] [LIMIT]
-
-// Write-Only Query Structure
-// (CREATE [UNIQUE] | MERGE)*
-// [SET|DELETE|REMOVE|FOREACH]*
-// [RETURN [ORDER BY] [SKIP] [LIMIT]]
-
-// Read-Write Query Structure
-// [MATCH WHERE]
-// [OPTIONAL MATCH WHERE]
-// [WITH [ORDER BY] [SKIP] [LIMIT]]
-// (CREATE [UNIQUE] | MERGE)*
-// [SET|DELETE|REMOVE|FOREACH]*
-// [RETURN [ORDER BY] [SKIP] [LIMIT]]
-
 // Stringer ...
 type Stringer string
 

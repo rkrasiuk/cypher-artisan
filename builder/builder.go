@@ -1,7 +1,9 @@
 package builder
 
 import (
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 // QueryBuilder ...
@@ -26,7 +28,7 @@ func (qb QueryBuilder) Match(patterns ...string) QueryBuilder {
 			query += `,`
 		}
 		query += `
-		`
+			`
 	}
 	return QueryBuilder{
 		query,
@@ -44,20 +46,20 @@ func (qb QueryBuilder) Where(whereClause string) QueryBuilder {
 }
 
 // With ...
-func (qb QueryBuilder) With(withClause string) QueryBuilder {
+func (qb QueryBuilder) With(withClauses ...string) QueryBuilder {
 	return QueryBuilder{
 		qb.query + `
 		WITH 
-			` + withClause,
+			` + strings.Join(withClauses, ", "),
 	}
 }
 
 // Return ...
-func (qb QueryBuilder) Return(returnClause string) QueryBuilder {
+func (qb QueryBuilder) Return(returnClauses ...string) QueryBuilder {
 	return QueryBuilder{
 		qb.query + `
 		RETURN 
-			` + returnClause,
+			` + strings.Join(returnClauses, ", "),
 	}
 }
 
@@ -70,15 +72,34 @@ func (qb QueryBuilder) OrderBy(orderByClause string) QueryBuilder {
 	}
 }
 
+// OrderByDesc ...
+func (qb QueryBuilder) OrderByDesc(orderByDescClause string) QueryBuilder {
+	return QueryBuilder{
+		qb.query + `
+		ORDER BY 
+		` + orderByDescClause + ` DESC`,
+	}
+}
+
 // Limit ...
 func (qb QueryBuilder) Limit(limit int) QueryBuilder {
 	return QueryBuilder{
 		qb.query + `
-		LIMIT ` + strconv.Itoa(limit),
+		LIMIT	` + strconv.Itoa(limit),
 	}
 }
 
 // Execute ...
 func (qb QueryBuilder) Execute() string {
 	return qb.query
+}
+
+// As ...
+func As(initial, alias string) string {
+	return fmt.Sprintf("%v AS %v", initial, alias)
+}
+
+// Assign ...
+func Assign(name, pattern string) string {
+	return fmt.Sprintf("%v = %v", name, pattern)
 }

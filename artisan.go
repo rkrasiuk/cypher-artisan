@@ -42,10 +42,20 @@ func QueryBuilder() builder.QueryBuilder {
 	return builder.NewQueryBuilder()
 }
 
+// As ...
+func As(initial, alias string) string {
+	return builder.As(initial, alias)
+}
+
+// Assign ...
+func Assign(name, pattern string) string {
+	return builder.Assign(name, pattern)
+}
+
 /////
 
 func main() {
-	n := art.NewNode("w1").
+	n := Node("w1").
 		Labels("Person", "Wallet").
 		Props(Prop{"name", "Theo Gauchoux"}, Prop{"age", 22})
 	fmt.Println(n)
@@ -56,14 +66,14 @@ func main() {
 		Match(
 			Node("w1").Labels("Wallet").String(),
 			Node("w2").Labels("Wallet").String(),
-			"p = (w1)-[tx:|*DEPTH*|]-(w2)",
+			Assign("p", "(w1)-[tx:|*DEPTH*|]-(w2)"),
 		).
 		With(
-			`wp, w1, w2,
-			w2.address AS recipient,
-			|*WHERE*| AS tx2`,
+			"wp", "w1", "w2",
+			As("w2.address", "recipient"),
+			As("|*WHERE*|", "tx2"),
 		).
-		Return("p, w1, w2, length(p), tx2").Limit(20).Execute()
+		Return("p", "w1", "w2", "length(p)", "tx2").Limit(20).Execute()
 
 	fmt.Println("res: \n", res, "\n---\n ")
 
@@ -77,10 +87,10 @@ func main() {
 		Match(
 			Node("w1").Labels("Wallet").String(),
 			Node("w2").Labels("Wallet").String(),
-			"p = shortestPath((w1)-[*..]-(w2))",
+			Assign("p", "shortestPath((w1)-[*..]-(w2))"),
 		).
 		Where("w1.address = {w1} AND w2.address IN {w2}").
-		Return("p, length(p)").Execute()
+		Return("p", "length(p)").Execute()
 
 	fmt.Println(res)
 

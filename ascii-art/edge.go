@@ -63,14 +63,25 @@ func (e *Edge) Path(path Path) *Edge {
 	return e
 }
 
-func (e Edge) String() string {
-	var labels string
+// Relationship ...
+func (e Edge) Relationship(lnode, rnode *Node) string {
+	return fmt.Sprintf("%v%v%v", lnode.String(), e.String(), rnode.String())
+}
 
+func (e Edge) String() (res string) {
+	res = e.name
+
+	var labels string
 	if len(e.labels) > 0 {
 		labels = fmt.Sprintf(":%v", strings.Join(e.labels, ":"))
+		res += labels
 	}
 
-	res := fmt.Sprintf("-[%v%v %v]-", e.name, labels, e.props.String())
+	if len(e.props) > 0 {
+		res += " " + e.props.String()
+	}
+
+	res = fmt.Sprintf("-[%v]-", res)
 
 	switch e.path {
 	case Outgoing:

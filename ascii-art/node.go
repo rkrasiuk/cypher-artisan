@@ -37,12 +37,19 @@ func (n *Node) Props(props ...Prop) *Node {
 	return n
 }
 
-func (n Node) String() string {
-	var labels string
+func (n Node) String() (res string) {
+	res += n.name
 
 	if len(n.labels) > 0 {
+		var labels string
 		labels = fmt.Sprintf(":%v", strings.Join(n.labels, ":"))
+		res += labels
 	}
 
-	return fmt.Sprintf("(%v%v %v)", n.name, labels, n.props.String())
+	if len(n.props) > 0 {
+		res += " " + n.props.String()
+	}
+
+	res = fmt.Sprintf("(%v)", res)
+	return
 }

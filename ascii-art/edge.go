@@ -64,8 +64,8 @@ func (e *Edge) Path(path Path) *Edge {
 }
 
 // Relationship ...
-func (e Edge) Relationship(lnode, rnode *Node) string {
-	return fmt.Sprintf("%v%v%v", lnode.String(), e.String(), rnode.String())
+func (e Edge) Relationship(lnode, rnode string) string {
+	return fmt.Sprintf("%v%v%v", lnode, e.String(), rnode)
 }
 
 func (e Edge) String() (res string) {

@@ -66,7 +66,7 @@ func main() {
 		Match(
 			Node("w1").Labels("Wallet").String(),
 			Node("w2").Labels("Wallet").String(),
-			Assign("p", Edge("tx").Labels("|*DEPTH*|").Relationship(Node("w1"), Node("w2"))),
+			Assign("p", Edge("tx").Labels("|*DEPTH*|").Relationship(Node("w1").String(), Node("w2").String())),
 		).
 		With(
 			"wp", "w1", "w2",

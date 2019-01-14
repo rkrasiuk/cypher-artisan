@@ -1,5 +1,32 @@
 # cypher-artisan
 
+## Query Sample
+
+```
+MATCH (m:Movie)<-[:RATED]-(u:User)
+WHERE m.title CONTAINS "Matrix"
+WITH m.title AS movie, COUNT(*) AS reviews
+RETURN movie, reviews
+ORDER BY reviews DESC
+LIMIT 5;
+```
+
+```go
+    QueryBuilder().
+		Match(
+			Edge("").Labels("RATED").Path(IncomingPath).Relationship(
+				Node("m").Labels("Movie").String(),
+				Node("u").Labels("User").String(),
+			),
+		).
+		Where(`m.title CONTAINS "Matrix"`).
+		With(As("m.title", "movie"), As("COUNT(*)", "reviews")).
+		Return("movie", "reviews").
+		OrderByDesc("reviews").
+		Limit(5).
+        Execute()
+```
+
 ## Roadmap
 
 ### Query Clauses List
@@ -10,8 +37,10 @@
     + Return
     + OrderBy
     + Limit
+    + OrderByDesc
+    + As
+    + Assign (`=`)
 
-    - As
     - OptionalMatch
     - Skip
     - Create
@@ -22,7 +51,6 @@
     - Remove
     - ForEach
     - ReturnDistinct
-    - OrderByDesc
     - Union
     - On
     - DetachDelete

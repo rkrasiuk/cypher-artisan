@@ -77,7 +77,7 @@ func (qb QueryBuilder) OrderByDesc(orderByDescClause string) QueryBuilder {
 	return QueryBuilder{
 		qb.query + `
 		ORDER BY 
-		` + orderByDescClause + ` DESC`,
+			` + orderByDescClause + ` DESC`,
 	}
 }
 

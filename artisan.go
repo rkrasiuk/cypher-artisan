@@ -130,6 +130,21 @@ func main() {
 		Return("nineties.title").
 		Execute()
 	runAndPrint(session, q)
+
+	ex := QueryBuilder().
+		Match(
+			Edge("").Labels("RATED").Path(IncomingPath).Relationship(
+				Node("m").Labels("Movie").String(),
+				Node("u").Labels("User").String(),
+			),
+		).
+		Where(`m.title CONTAINS "Matrix"`).
+		With(As("m.title", "movie"), As("COUNT(*)", "reviews")).
+		Return("movie", "reviews").
+		OrderByDesc("reviews").
+		Limit(5).
+		Execute()
+	fmt.Println(ex)
 }
 
 func runAndPrint(session neo4j.Session, q string) {
